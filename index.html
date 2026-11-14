@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#101713" />
+    <meta name="description" content="Mapa y guía GPS de los circuitos Los Guardianes y Los Lúcumos en Lomas de Lúcumo." />
+    <meta name="color-scheme" content="light" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <title>Mapa Lúcumo · Lomas de Lúcumo</title>
+    <link rel="icon" href="Recursos/iconos/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="Recursos/iconos/icon-192.png" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="preload" href="vendor/fonts/fraunces.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="vendor/fonts/archivo.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
+    <link rel="stylesheet" href="css/estilos.css" />
+  </head>
+  <body>
+    <h1 class="solo-lectores">Mapa Lúcumo</h1>
+
+    <div class="aplicacion">
+    <header class="cabecera">
+      <a class="marca" href="./" aria-label="Mapa Lúcumo, inicio">
+        <img src="Recursos/iconos/icon-192.png" alt="" width="34" height="34" />
+        <span class="marca-texto">
+          <span class="marca-nombre">Mapa Lúcumo</span>
+          <span class="marca-sub">Lomas de Lúcumo</span>
+        </span>
+      </a>
+      <span class="conexion-cabecera" id="estadoConexion">En línea</span>
+    </header>
+    <label class="selector-idioma">Idioma <select aria-label="Idioma" class="idioma-opciones"><option value="es">Español</option><option value="en">English</option><option value="zh-Hans">简体中文</option></select></label>
+      <nav class="selector" aria-label="Elegir circuito">
+        <button class="circuito-boton" type="button" data-circuito="guardianes" aria-pressed="false">
+          <span class="punto" style="--punto: var(--azul)"></span>
+          Guardianes
+        </button>
+        <button class="circuito-boton" type="button" data-circuito="lucumos" aria-pressed="false">
+          <span class="punto" style="--punto: var(--naranja)"></span>
+          Lúcumos
+        </button>
+      </nav>
+    <div class="mapa-tarjeta">
+    <main id="mapa" aria-label="Mapa de los circuitos"></main>
+
+    <div class="controles" aria-label="Controles del mapa">
+      <div class="control-grupo">
+        <button class="control" type="button" id="acercar" aria-label="Acercar el mapa">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+        </button>
+        <button class="control" type="button" id="alejar" aria-label="Alejar el mapa">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14" /></svg>
+        </button>
+      </div>
+      <button class="control control-gps" type="button" id="centrar" aria-label="Centrar en mi ubicación" aria-pressed="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="6" /><path d="M12 2v4M12 18v4M2 12h4M18 12h4" /></svg>
+      </button>
+      <button class="control" type="button" id="verRuta" aria-label="Ver todo el circuito">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5" /></svg>
+      </button>
+    </div>
+    </div>
+
+    <div class="chip-conexion" id="sinConexion" hidden>Sin conexión · mapa disponible</div>
+    <div class="aviso" id="aviso" role="status" aria-live="polite"></div>
+
+    <section class="panel" id="panel" aria-label="Navegación del circuito" hidden>
+      <div class="panel-cabecera">
+        <span class="insignia" id="insigniaPanel">1</span>
+        <div class="panel-titulos">
+          <p class="panel-rotulo" id="panelRotulo">Siguiente parada</p>
+          <p class="panel-circuito" id="panelCircuito">Los Guardianes · 5 km</p>
+        </div>
+        <span class="panel-cuenta" id="panelCuenta">1 de 13</span>
+      </div>
+
+      <h2 class="panel-nombre" id="panelNombre">Entrada</h2>
+
+      <div class="panel-media">
+        <div class="distancia-bloque" id="panelDistanciaBloque">
+          <div class="distancia-linea">
+            <span class="distancia-valor" id="panelDistancia">—</span>
+            <span class="distancia-unidad" id="panelDistanciaUnidad"></span>
+          </div>
+          <p class="distancia-nota" id="panelDistanciaNota">por el sendero</p>
+        </div>
+        <span class="chip-estado" id="panelEstado">Buscando GPS</span>
+      </div>
+
+      <div class="progreso" id="progresoTicks" role="progressbar" aria-label="Progreso del recorrido" aria-valuemin="0" aria-valuemax="13" aria-valuenow="0"></div>
+
+      <div class="panel-pie">
+        <span class="panel-progreso-texto" id="panelProgresoTexto">0 de 13 visitadas</span>
+        <button class="enlace" type="button" id="btnLista">Todas las paradas</button>
+      </div>
+
+      <div class="panel-acciones" id="panelAccionesNormal">
+        <button class="boton boton-primario" type="button" id="btnVerParada">Ver parada</button>
+        <button class="boton boton-secundario" type="button" id="btnMarcar">Marcar visitada</button>
+      </div>
+
+      <div class="panel-acciones" id="panelAccionesCompletado" hidden>
+        <button class="boton boton-primario" type="button" id="btnResumen">Ver resumen</button>
+        <button class="boton boton-secundario" type="button" id="btnReiniciarPanel">Reiniciar</button>
+      </div>
+    </section>
+    <p class="offline-nota">✓ Disponible sin conexión después de la primera visita</p>
+    </div>
+
+    <dialog class="dialogo dialogo-bienvenida" id="bienvenida" aria-labelledby="bienvenidaTitulo">
+      <div class="dialogo-contenido">
+        <label class="selector-idioma">Idioma <select aria-label="Idioma" class="idioma-opciones"><option value="es">Español</option><option value="en">English</option><option value="zh-Hans">简体中文</option></select></label>
+        <div class="bienvenida-cabecera">
+          <img src="Recursos/iconos/icon-192.png" alt="" width="58" height="58" />
+          <p class="bienvenida-marca">Lomas de Lúcumo</p>
+        </div>
+        <h2 id="bienvenidaTitulo">Elige tu circuito</h2>
+        <p class="bienvenida-texto">Dos recorridos, una misma loma. Elige el que vas a caminar hoy y el mapa te acompaña.</p>
+        <div class="tarjetas-circuito">
+          <button class="tarjeta-circuito" type="button" data-circuito="guardianes" style="--color: var(--azul)">
+            <span class="tarjeta-linea"></span>
+            <span class="tarjeta-nombre">Los Guardianes</span>
+            <span class="tarjeta-meta">5 km · 13 paradas</span>
+            <span class="tarjeta-texto">El recorrido clásico por los miradores y las formaciones de la loma.</span>
+          </button>
+          <button class="tarjeta-circuito" type="button" data-circuito="lucumos" style="--color: var(--naranja)">
+            <span class="tarjeta-linea"></span>
+            <span class="tarjeta-nombre">Los Lúcumos</span>
+            <span class="tarjeta-meta">7 km · 16 paradas</span>
+            <span class="tarjeta-texto">La vuelta larga, con las vistas panorámicas del sector oeste.</span>
+          </button>
+        </div>
+        <p class="bienvenida-nota">Puedes cambiar de circuito cuando quieras.</p>
+      </div>
+    </dialog>
+
+    <dialog class="dialogo dialogo-parada" id="dialogoParada" aria-labelledby="paradaNombre">
+      <div class="dialogo-contenido">
+        <div class="dialogo-cabecera">
+          <span class="insignia" id="paradaNumero">1</span>
+          <button class="cerrar" type="button" data-cerrar aria-label="Cerrar">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          </button>
+        </div>
+        <p class="rotulo" id="paradaCircuito">Circuito Los Guardianes</p>
+        <h2 id="paradaNombre">Entrada</h2>
+        <p class="parada-descripcion" id="paradaDescripcion"></p>
+        <div class="parada-estado">
+          <span class="chip" id="paradaEstado">Siguiente parada</span>
+          <span class="parada-distancia" id="paradaDistancia"></span>
+        </div>
+        <div class="dialogo-acciones">
+          <button class="boton boton-primario" type="button" id="paradaMarcar">Marcar como visitada</button>
+          <button class="boton boton-secundario" type="button" data-cerrar>Cerrar</button>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog class="dialogo dialogo-lista" id="dialogoLista" aria-labelledby="listaTitulo">
+      <div class="dialogo-contenido">
+        <div class="dialogo-cabecera">
+          <div>
+            <p class="rotulo">Paradas del recorrido</p>
+            <h2 id="listaTitulo">Circuito Los Guardianes</h2>
+          </div>
+          <button class="cerrar" type="button" data-cerrar aria-label="Cerrar">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          </button>
+        </div>
+        <ol class="lista-paradas" id="listaParadas"></ol>
+      </div>
+    </dialog>
+
+    <dialog class="dialogo dialogo-resumen" id="dialogoResumen" aria-labelledby="resumenTitulo">
+      <div class="dialogo-contenido">
+        <div class="dialogo-cabecera">
+          <span class="insignia insignia-completa" id="resumenInsignia">✓</span>
+          <button class="cerrar" type="button" data-cerrar aria-label="Cerrar">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          </button>
+        </div>
+        <h2 id="resumenTitulo">¡Gracias por visitar Lomas de Lúcumo!</h2>
+        <p class="resumen-texto" id="resumenTexto"></p>
+        <dl class="resumen-datos">
+          <div>
+            <dt>Paradas</dt>
+            <dd id="resumenParadas">13 de 13</dd>
+          </div>
+          <div>
+            <dt>Tiempo</dt>
+            <dd id="resumenTiempo">—</dd>
+          </div>
+          <div>
+            <dt>Distancia</dt>
+            <dd id="resumenDistancia">5 km</dd>
+          </div>
+        </dl>
+        <div class="dialogo-acciones">
+          <button class="boton boton-primario" type="button" id="resumenReiniciar">Reiniciar recorrido</button>
+          <button class="boton boton-secundario" type="button" data-cerrar>Volver al mapa</button>
+        </div>
+      </div>
+    </dialog>
+
+    <script src="vendor/leaflet/leaflet.js"></script>
+    <script src="vendor/turf/turf.min.js"></script>
+    <script>
+      if (location.protocol === "file:") {
+        var avisoArchivo = document.getElementById("aviso");
+        if (avisoArchivo) {
+          avisoArchivo.textContent = "Abre la app con un servidor local o HTTPS para activar el mapa, el GPS y el modo offline.";
+          avisoArchivo.classList.add("visible");
+        }
+      }
+    </script>
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>
